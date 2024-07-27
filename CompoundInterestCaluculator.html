@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compound Interest Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        label {
+            display: inline-block;
+            width: 200px;
+        }
+        input {
+            width: 100px;
+        }
+        #chart-container {
+            width: 100%;
+            height: 400px;
+            margin-top: 20px;
+        }
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Compound Interest Calculator</h1>
+    <div class="input-group">
+        <label for="principal">Initial Investment ($):</label>
+        <input type="number" id="principal" value="10000" min="0" step="100">
+    </div>
+    <div class="input-group">
+        <label for="annualContribution">Annual Contribution ($):</label>
+        <input type="number" id="annualContribution" value="1000" min="0" step="100">
+    </div>
+    <div class="input-group">
+        <label for="interestRate">Annual Interest Rate (%):</label>
+        <input type="number" id="interestRate" value="7" min="0" max="100" step="0.1">
+    </div>
+    <div class="input-group">
+        <label for="years">Investment Period (Years):</label>
+        <input type="number" id="years" value="30" min="1" max="100" step="1">
+    </div>
+    <div class="input-group">
+        <label for="compoundFrequency">Compound Frequency:</label>
+        <select id="compoundFrequency">
+            <option value="1">Annually</option>
+            <option value="2">Semi-annually</option>
+            <option value="4">Quarterly</option>
+            <option value="12">Monthly</option>
+            <option value="365">Daily</option>
+        </select>
+    </div>
+    <button onclick="updateChart()">Calculate</button>
+    <div id="results"></div>
+    <div id="chart-container">
+        <canvas id="chart"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let chart;
+
+        function calculateCompoundInterest(principal, annualContribution, rate, years, frequency) {
+            const periods = years * frequency;
+            const ratePerPeriod = rate / 100 / frequency;
+            const contributionPerPeriod = annualContribution / frequency;
+            
+            let balance = principal;
+            const balances = [balance];
+            
+            for (let i = 1; i <= periods; i++) {
+                balance = balance * (1 + ratePerPeriod) + contributionPerPeriod;
+                if (i % frequency === 0) {
+                    balances.push(balance);
+                }
+            }
+            
+            return balances;
+        }
+
+        function updateChart() {
+            const principal = parseFloat(document.getElementById('principal').value);
+            const annualContribution = parseFloat(document.getElementById('annualContribution').value);
+            const interestRate = parseFloat(document.getElementById('interestRate').value);
+            const years = parseInt(document.getElementById('years').value);
+            const frequency = parseInt(document.getElementById('compoundFrequency').value);
+
+            const balances = calculateCompoundInterest(principal, annualContribution, interestRate, years, frequency);
+            const labels = Array.from({length: years + 1}, (_, i) => i);
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            const ctx = document.getElementById('chart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Balance',
+                        data: balances,
+                        borderColor: 'blue',
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    title: {
+                        display: true,
+                        text: 'Compound Interest Growth'
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Years'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Balance ($)'
+                            },
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Display results
+            const totalContributions = principal + (annualContribution * years);
+            const totalInterest = balances[balances.length - 1] - totalContributions;
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <h3>Results:</h3>
+                <p>Final Balance: $${balances[balances.length - 1].toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+                <p>Total Contributions: $${totalContributions.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+                <p>Total Interest Earned: $${totalInterest.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+            `;
+        }
+
+        updateChart();
+    </script>
+</body>
+</html>
